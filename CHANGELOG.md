@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.13] - 2026-02-17
+
+### Added
+- **Disk Persistence**: New `persistToDisk` configuration option for memory mode
+  - Memories are saved to `~/.openclaw-memory/` and survive restarts
+  - Only applies when using in-memory mode (no qdrantUrl configured)
+  - Automatic save on store/delete operations
+  - Automatic load on plugin initialization
+
+### Changed
+- Memory mode now supports persistent storage without requiring external Qdrant server
+- Enhanced logging to show persistence status on startup
+
 ## [1.0.12] - 2026-02-17
 
 ### Documentation

@@ -2,7 +2,7 @@
   "id": "memory-qdrant",
   "kind": "memory",
   "name": "Memory (Qdrant)",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "本地语义记忆系统（Qdrant + Transformers.js，完全本地运行）",
   "configSchema": {
     "type": "object",
@@ -11,6 +11,11 @@
       "qdrantUrl": {
         "type": "string",
         "description": "Qdrant 服务地址（留空使用内存模式）"
+      },
+      "persistToDisk": {
+        "type": "boolean",
+        "default": false,
+        "description": "Save memories to disk in memory mode (stored in ~/.openclaw-memory/)"
       },
       "collectionName": {
         "type": "string",
@@ -50,6 +55,10 @@
       "placeholder": "Leave empty for in-memory mode (zero config)",
       "advanced": true,
       "help": "External Qdrant server URL. Leave empty to use in-memory storage."
+    },
+    "persistToDisk": {
+      "label": "Persist to Disk",
+      "help": "Save memories to disk in memory mode. Data will be stored in ~/.openclaw-memory/ and survive restarts. Only applies when Qdrant URL is empty."
     },
     "collectionName": {
       "label": "Collection Name",

@@ -109,6 +109,10 @@ npm rebuild                    # 然后重新构建原生模块
 ### 配置选项
 
 - **qdrantUrl** (可选): 外部 Qdrant 服务地址，留空使用内存模式
+- **persistToDisk** (默认 false): 在内存模式下将记忆保存到磁盘
+  - 数据存储在 `~/.openclaw-memory/` 目录
+  - 重启后数据不会丢失
+  - 仅在内存模式下生效（未配置 qdrantUrl 时）
 - **autoCapture** (默认 false): 自动记录对话内容
   - ⚠️ **隐私保护**: 默认会跳过包含 PII（邮箱、电话号码）的文本
   - 需要配合 `allowPIICapture` 才能捕获 PII
@@ -130,6 +134,7 @@ npm rebuild                    # 然后重新构建原生模块
 ### 数据存储
 
 - **内存模式**（默认）: 数据仅在进程运行期间保存，重启后清空
+  - 启用 `persistToDisk: true` 后，数据会保存到 `~/.openclaw-memory/` 并在重启后恢复
 - **Qdrant 模式**: 如果配置了 `qdrantUrl`，数据会发送到该服务器
   - ⚠️ 仅配置受信任的 Qdrant 服务器
   - 建议使用本地 Qdrant 实例或专用服务账户

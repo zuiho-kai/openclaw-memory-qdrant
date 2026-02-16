@@ -7,6 +7,9 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { pipeline } from '@xenova/transformers';
 import { randomUUID } from 'crypto';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 
 // ============================================================================
 // 配置
@@ -28,7 +31,7 @@ const SIMILARITY_THRESHOLDS = {
 // ============================================================================
 
 class MemoryDB {
-  constructor(url, collectionName, maxSize = DEFAULT_MAX_MEMORY_SIZE) {
+  constructor(url, collectionName, maxSize = DEFAULT_MAX_MEMORY_SIZE, persistPath = null) {
     // 如果没有配置 URL，使用本地 Qdrant（需要手动启动）
     // 或者使用内存存储（简化版）
     this.useMemoryFallback = !url || url === ':memory:';
@@ -39,10 +42,55 @@ class MemoryDB {
       this.collectionName = collectionName;
       this.maxSize = maxSize;
       this.initialized = true;
+
+      // 磁盘持久化配置
+      this.persistPath = persistPath;
+      if (this.persistPath) {
+        this._loadFromDisk();
+      }
     } else {
       this.client = new QdrantClient({ url });
       this.collectionName = collectionName;
       this.initialized = false;
+    }
+  }
+
+  _loadFromDisk() {
+    if (!this.persistPath) return;
+
+    try {
+      if (existsSync(this.persistPath)) {
+        const data = readFileSync(this.persistPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        this.memoryStore = parsed.memories || [];
+        console.log(`[memory-qdrant] Loaded ${this.memoryStore.length} memories from disk`);
+      }
+    } catch (err) {
+      console.error(`[memory-qdrant] Failed to load from disk: ${err.message}`);
+      this.memoryStore = [];
+    }
+  }
+
+  _saveToDisk() {
+    if (!this.persistPath) return;
+
+    try {
+      const dir = this.persistPath.substring(0, this.persistPath.lastIndexOf('/'));
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+
+      const data = {
+        version: '1.0',
+        collectionName: this.collectionName,
+        savedAt: new Date().toISOString(),
+        count: this.memoryStore.length,
+        memories: this.memoryStore
+      };
+
+      writeFileSync(this.persistPath, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (err) {
+      console.error(`[memory-qdrant] Failed to save to disk: ${err.message}`);
     }
   }
 
@@ -92,6 +140,10 @@ class MemoryDB {
       const id = randomUUID();
       const record = { id, ...entry, createdAt: Date.now() };
       this.memoryStore.push(record);
+
+      // 保存到磁盘
+      this._saveToDisk();
+
       return record;
     }
 
@@ -179,6 +231,10 @@ class MemoryDB {
       const index = this.memoryStore.findIndex(r => r.id === id);
       if (index !== -1) {
         this.memoryStore.splice(index, 1);
+
+        // 保存到磁盘
+        this._saveToDisk();
+
         return true;
       }
       return false;
@@ -328,12 +384,21 @@ function formatRelevantMemoriesContext(memories) {
 export default function register(api) {
   const cfg = api.pluginConfig;
   const maxSize = cfg.maxMemorySize || DEFAULT_MAX_MEMORY_SIZE;
-  const db = new MemoryDB(cfg.qdrantUrl, cfg.collectionName || 'openclaw_memories', maxSize);
+
+  // 磁盘持久化路径
+  let persistPath = null;
+  if (cfg.persistToDisk && (!cfg.qdrantUrl || cfg.qdrantUrl === ':memory:')) {
+    const storageDir = join(homedir(), '.openclaw-memory');
+    persistPath = join(storageDir, `${cfg.collectionName || 'openclaw_memories'}.json`);
+  }
+
+  const db = new MemoryDB(cfg.qdrantUrl, cfg.collectionName || 'openclaw_memories', maxSize, persistPath);
   const embeddings = new Embeddings();
 
   if (db.useMemoryFallback) {
     const sizeInfo = maxSize >= 999999 ? 'unlimited' : `max ${maxSize} memories, LRU eviction`;
-    api.logger.info(`memory-qdrant: using in-memory storage (${sizeInfo})`);
+    const persistInfo = persistPath ? `, persisted to ${persistPath}` : ', volatile (cleared on restart)';
+    api.logger.info(`memory-qdrant: using in-memory storage (${sizeInfo}${persistInfo})`);
   } else {
     api.logger.info(`memory-qdrant: using Qdrant at ${cfg.qdrantUrl}`);
 
