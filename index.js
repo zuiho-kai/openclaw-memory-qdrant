@@ -388,7 +388,10 @@ export default function register(api) {
   // 磁盘持久化路径
   let persistPath = null;
   if (cfg.persistToDisk && (!cfg.qdrantUrl || cfg.qdrantUrl === ':memory:')) {
-    const storageDir = join(homedir(), '.openclaw-memory');
+    // 使用自定义路径或默认路径
+    const storageDir = cfg.storagePath
+      ? cfg.storagePath.replace(/^~/, homedir())
+      : join(homedir(), '.openclaw-memory');
     persistPath = join(storageDir, `${cfg.collectionName || 'openclaw_memories'}.json`);
   }
 

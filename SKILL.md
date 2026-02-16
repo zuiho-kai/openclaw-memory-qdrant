@@ -1,7 +1,7 @@
 ---
 name: memory-qdrant
 description: Local semantic memory with Qdrant and Transformers.js. Store, search, and recall conversation context using vector embeddings (fully local, no API keys).
-version: 1.0.13
+version: 1.0.15
 author: zuiho-kai
 homepage: https://github.com/zuiho-kai/openclaw-memory-qdrant
 tags: [memory, semantic-search, qdrant, transformers, embeddings, local-ai, vector-db, context]
@@ -50,7 +50,8 @@ Enable in your OpenClaw config:
 ```
 
 **Options:**
-- `persistToDisk` (default: false) - Save memories to disk in memory mode. Data stored in `~/.openclaw-memory/` survives restarts.
+- `persistToDisk` (default: true) - Save memories to disk in memory mode. Data stored in `~/.openclaw-memory/` survives restarts. Set to false for volatile memory.
+- `storagePath` (optional) - Custom storage directory. Leave empty for default `~/.openclaw-memory/`.
 - `autoCapture` (default: false) - Auto-record conversations. **Privacy protection enabled by default**: text containing PII (emails, phone numbers) is automatically skipped.
 - `allowPIICapture` (default: false) - Allow capturing PII when autoCapture is enabled. **Only enable if you understand the privacy implications.**
 - `autoRecall` (default: true) - Auto-inject relevant memories
@@ -85,8 +86,8 @@ memory_forget({ query: "text to forget" })
 
 ## Privacy & Security
 
-- **In-memory mode** (default): Data cleared on restart unless `persistToDisk` is enabled
-- **Disk persistence**: When `persistToDisk: true`, memories are saved to `~/.openclaw-memory/` and survive restarts
+- **Disk persistence** (default): Memories saved to `~/.openclaw-memory/` and survive restarts. Set `persistToDisk: false` for volatile memory.
+- **In-memory mode**: When `persistToDisk: false`, data cleared on restart
 - **Qdrant mode**: Data sent to configured server (use trusted servers only)
 - **Network**: Downloads ~25MB model from Hugging Face on first run
 - **PII Protection**: By default, autoCapture skips text containing emails or phone numbers. Set `allowPIICapture: true` only if you understand the privacy implications.

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.15] - 2026-02-17
+
+### Added
+- **Custom Storage Path**: New `storagePath` configuration option
+  - Allows users to specify custom directory for storing memories
+  - Supports `~` for home directory
+  - Defaults to `~/.openclaw-memory/` if not specified
+
+## [1.0.14] - 2026-02-17
+
+### Changed
+- **BREAKING**: `persistToDisk` now defaults to `true` (was `false`)
+- Disk persistence is now the default behavior for better user experience
+- Set `persistToDisk: false` to use volatile memory mode
+
 ## [1.0.13] - 2026-02-17
 
 ### Added
