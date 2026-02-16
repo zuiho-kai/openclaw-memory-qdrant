@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.12] - 2026-02-17
+
+### Documentation
+- Added prominent privacy warning at top of SKILL.md about autoCapture PII risks
+- Clarified that PII capture only occurs if user explicitly enables `allowPIICapture`
+- Enhanced visibility of privacy implications for ClawHub users
+
 ## [1.0.11] - 2026-02-17
 
 ### Added

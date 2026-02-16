@@ -1,7 +1,7 @@
 ---
 name: memory-qdrant
 description: Local semantic memory with Qdrant and Transformers.js. Store, search, and recall conversation context using vector embeddings (fully local, no API keys).
-version: 1.0.11
+version: 1.0.12
 author: zuiho-kai
 homepage: https://github.com/zuiho-kai/openclaw-memory-qdrant
 tags: [memory, semantic-search, qdrant, transformers, embeddings, local-ai, vector-db, context]
@@ -14,6 +14,8 @@ metadata:
 # memory-qdrant
 
 **Use when** you need your OpenClaw agent to remember and recall information across conversations using semantic search.
+
+⚠️ **Privacy Notice**: The optional `autoCapture` feature (disabled by default) can capture PII like emails and phone numbers if you enable `allowPIICapture`. Only enable if you understand the privacy implications.
 
 Local semantic memory plugin powered by Qdrant vector database and Transformers.js embeddings. Zero configuration, fully local, no API keys required.
 

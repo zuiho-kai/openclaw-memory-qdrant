@@ -2,7 +2,7 @@
   "id": "memory-qdrant",
   "kind": "memory",
   "name": "Memory (Qdrant)",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "本地语义记忆系统（Qdrant + Transformers.js，完全本地运行）",
   "configSchema": {
     "type": "object",
