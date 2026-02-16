@@ -2,7 +2,7 @@
   "id": "memory-qdrant",
   "kind": "memory",
   "name": "Memory (Qdrant)",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "本地语义记忆系统（Qdrant + Transformers.js，完全本地运行）",
   "configSchema": {
     "type": "object",
@@ -19,6 +19,11 @@
       "autoCapture": {
         "type": "boolean",
         "default": false
+      },
+      "allowPIICapture": {
+        "type": "boolean",
+        "default": false,
+        "description": "Allow capturing text containing PII (emails, phone numbers). Only applies when autoCapture is enabled."
       },
       "autoRecall": {
         "type": "boolean",
@@ -53,7 +58,12 @@
     },
     "autoCapture": {
       "label": "Auto Capture",
-      "help": "Auto-save important info after conversations. Note: trigger patterns match emails and phone numbers, so enabling this may capture PII. Disabled by default."
+      "help": "⚠️ PRIVACY: Auto-save conversation content. Text containing PII (emails, phone numbers) will be skipped unless 'Allow PII Capture' is enabled. Disabled by default for privacy."
+    },
+    "allowPIICapture": {
+      "label": "Allow PII Capture",
+      "help": "⚠️ PRIVACY RISK: Allow capturing text with emails/phone numbers when autoCapture is enabled. Only enable if you understand the privacy implications. Requires autoCapture to be enabled.",
+      "advanced": true
     },
     "autoRecall": {
       "label": "Auto Recall",

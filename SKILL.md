@@ -48,7 +48,8 @@ Enable in your OpenClaw config:
 ```
 
 **Options:**
-- `autoCapture` (default: false) - Auto-record conversations. Note: trigger patterns include email/phone regex, so enabling this may capture PII.
+- `autoCapture` (default: false) - Auto-record conversations. **Privacy protection enabled by default**: text containing PII (emails, phone numbers) is automatically skipped.
+- `allowPIICapture` (default: false) - Allow capturing PII when autoCapture is enabled. **Only enable if you understand the privacy implications.**
 - `autoRecall` (default: true) - Auto-inject relevant memories
 - `qdrantUrl` (optional) - External Qdrant server (leave empty for in-memory)
 
@@ -84,7 +85,8 @@ memory_forget({ query: "text to forget" })
 - **In-memory mode** (default): Data cleared on restart
 - **Qdrant mode**: Data sent to configured server (use trusted servers only)
 - **Network**: Downloads ~25MB model from Hugging Face on first run
-- **autoCapture**: Disabled by default for privacy. Trigger patterns match emails and phone-like numbers, so enabling autoCapture can capture PII.
+- **PII Protection**: By default, autoCapture skips text containing emails or phone numbers. Set `allowPIICapture: true` only if you understand the privacy implications.
+- **autoCapture**: Disabled by default for privacy. When enabled, only captures text matching semantic triggers (preferences, decisions, facts) and skips PII unless explicitly allowed.
 
 ## Technical Details
 

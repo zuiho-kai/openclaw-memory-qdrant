@@ -1,6 +1,6 @@
 {
   "name": "openclaw-memory-qdrant",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "OpenClaw plugin for semantic memory with Qdrant and Transformers.js",
   "type": "module",
   "main": "index.js",

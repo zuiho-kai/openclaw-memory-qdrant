@@ -1,16 +1,13 @@
 /**
- * 自验证测试 - v1.0.10 修复验证
+ * 自验证测试 - v1.0.11 PII 保护验证
  *
  * 测试修复的问题：
- * - P1-13: CLI 命令使用统一常量
- * - P1-14: detectCategory 正则表达式一致性
- * - P1-15: 邮箱正则一致性
- * - P2-16: Embeddings 错误处理和重试
- * - P2-20: 输入清理
- * - P2-21: Qdrant 健康检查
+ * - PII 保护：移除 PII 模式从自动捕获触发器
+ * - containsPII() 函数正确检测邮箱和电话号码
+ * - detectCategory 不再使用 PII 模式
  */
 
-import { shouldCapture, detectCategory, sanitizeInput } from './index.js';
+import { shouldCapture, detectCategory, sanitizeInput, containsPII } from './index.js';
 
 // ============================================================================
 // 测试工具
@@ -73,22 +70,22 @@ console.log('📋 测试组 1: 输入清理 (sanitizeInput)');
   assertEquals(result5, 'Line1Line2', '应该移除控制字符但保留文本');
 }
 
-// 测试 2: detectCategory - 正则表达式一致性
-console.log('\n📋 测试组 2: 分类检测 (detectCategory)');
+// 测试 2: detectCategory - 不再使用 PII 模式
+console.log('\n📋 测试组 2: 分类检测 (detectCategory - 无 PII 模式)');
 {
-  // 测试电话号码（应该限制长度）
+  // 测试电话号码（不应该被识别为 entity）
   const phone1 = '+1234567890';  // 10 位
   const cat1 = detectCategory(phone1);
-  assertEquals(cat1, 'entity', '10 位电话号码应该被识别为 entity');
+  assert(cat1 !== 'entity', '电话号码不应该被自动识别为 entity');
 
-  const phone2 = '+12345678901234';  // 14 位（超过限制）
+  const phone2 = '+12345678901234';  // 14 位
   const cat2 = detectCategory(phone2);
-  assert(cat2 !== 'entity' || phone2.length <= 13, '超长电话号码不应该被识别为 entity');
+  assert(cat2 !== 'entity', '超长电话号码不应该被识别为 entity');
 
-  // 测试邮箱（应该使用严格模式）
+  // 测试邮箱（不应该被识别为 entity）
   const email1 = 'test@example.com';
   const cat3 = detectCategory(email1);
-  assertEquals(cat3, 'entity', '有效邮箱应该被识别为 entity');
+  assert(cat3 !== 'entity', '邮箱不应该被自动识别为 entity');
 
   const email2 = 'invalid@';
   const cat4 = detectCategory(email2);
@@ -105,28 +102,72 @@ console.log('\n📋 测试组 2: 分类检测 (detectCategory)');
   assertEquals(cat6, 'decision', '决策语句应该被识别为 decision');
 }
 
-// 测试 3: shouldCapture - 邮箱正则一致性
-console.log('\n📋 测试组 3: 捕获过滤 (shouldCapture)');
+// 测试 2.5: containsPII - PII 检测功能
+console.log('\n📋 测试组 2.5: PII 检测 (containsPII)');
 {
+  // 测试邮箱检测
+  const email1 = 'test@example.com';
+  assert(containsPII(email1), '应该检测到邮箱');
+
+  const email2 = 'My email is user@domain.org';
+  assert(containsPII(email2), '应该检测到文本中的邮箱');
+
+  const noEmail = 'No email here';
+  assert(!containsPII(noEmail), '不应该误检测邮箱');
+
+  // 测试电话号码检测
+  const phone1 = '+1234567890';
+  assert(containsPII(phone1), '应该检测到 10 位电话号码');
+
+  const phone2 = '+12345678901';
+  assert(containsPII(phone2), '应该检测到 11 位电话号码');
+
+  const phone3 = '+123456789012';
+  assert(containsPII(phone3), '应该检测到 12 位电话号码');
+
+  const phone4 = '+1234567890123';
+  assert(containsPII(phone4), '应该检测到 13 位电话号码');
+
+  const phone5 = '+12345678901234';
+  assert(!containsPII(phone5), '不应该检测到 14 位电话号码（超出范围）');
+
+  const noPhone = 'No phone here';
+  assert(!containsPII(noPhone), '不应该误检测电话号码');
+}
+
+// 测试 3: shouldCapture - 不再触发 PII 捕获
+console.log('\n📋 测试组 3: 捕获过滤 (shouldCapture - 无 PII 触发)');
+{
+  // shouldCapture 不再检查 PII，只检查语义触发器
+  // PII 检查由 containsPII 和 autoCapture 逻辑处理
+
   const email1 = 'My email is test@example.com';
   const result1 = shouldCapture(email1);
-  assert(result1, '包含有效邮箱的文本应该被捕获');
+  const hasPII1 = containsPII(email1);
+  assert(result1 && hasPII1, '包含邮箱的文本会触发捕获，但应该被 PII 检查拦截');
 
-  const email2 = 'Invalid email: @example';
-  const result2 = shouldCapture(email2);
-  assert(!result2, '包含无效邮箱的文本不应该被捕获');
+  const phone1 = 'Call me at +1234567890';
+  const result2 = shouldCapture(phone1);
+  const hasPII2 = containsPII(phone1);
+  assert(!result2 || hasPII2, '包含电话号码的文本如果触发捕获，应该被 PII 检查拦截');
 
   const remember1 = 'Remember to buy milk';
   const result3 = shouldCapture(remember1);
-  assert(result3, '包含 remember 关键词的文本应该被捕获');
+  const hasPII3 = containsPII(remember1);
+  assert(result3 && !hasPII3, '包含 remember 关键词且无 PII 的文本应该被捕获');
+
+  const prefer1 = 'I prefer dark mode';
+  const result4 = shouldCapture(prefer1);
+  const hasPII4 = containsPII(prefer1);
+  assert(result4 && !hasPII4, '包含 prefer 关键词且无 PII 的文本应该被捕获');
 
   const short1 = 'Hi';
-  const result4 = shouldCapture(short1);
-  assert(!result4, '过短的文本不应该被捕获');
+  const result5 = shouldCapture(short1);
+  assert(!result5, '过短的文本不应该被捕获');
 
   const long1 = 'a'.repeat(1000);
-  const result5 = shouldCapture(long1, 500);
-  assert(!result5, '超长文本不应该被捕获');
+  const result6 = shouldCapture(long1, 500);
+  assert(!result6, '超长文本不应该被捕获');
 }
 
 // 测试 4: ReDoS 防护

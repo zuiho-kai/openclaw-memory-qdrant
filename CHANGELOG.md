@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.11] - 2026-02-17
+
+### Added
+- **PII Protection**: New `allowPIICapture` configuration option (default: false)
+  - autoCapture now automatically skips text containing emails or phone numbers
+  - Users must explicitly enable `allowPIICapture` to capture PII
+  - Clear privacy warnings in UI and documentation
+
+### Changed
+- **BREAKING**: Removed PII patterns (emails, phone numbers) from automatic capture triggers
+- autoCapture now only triggers on semantic patterns (preferences, decisions, facts)
+- `detectCategory` no longer uses PII patterns for entity detection
+- Enhanced privacy documentation with clear warnings and use case guidance
+
+### Security
+- **Privacy Enhancement**: PII is now protected by default, addressing ClawHub security review feedback
+- Added `containsPII()` function to detect and filter sensitive information
+- Logs warning when PII is detected and skipped during autoCapture
+
+### Documentation
+- Updated SKILL.md with clear privacy warnings and PII protection explanation
+- Updated README.md with detailed `allowPIICapture` usage guidance
+- Added use case recommendations (personal vs shared environments)
+
 ## [1.0.10] - 2026-02-17
 
 ### Fixed

@@ -266,36 +266,44 @@ const MEMORY_TRIGGERS = [
   /remember|记住|保存/i,
   /prefer|喜欢|偏好/i,
   /decided?|决定/i,
-  /\+\d{10,13}/,  // 限制长度防止 ReDoS
-  /^[\w.+-]+@[\w-]+\.[\w.-]{2,}$/,  // 更严格的邮箱正则
   /my \w+ is|is my|我的.*是/i,
   /i (like|prefer|hate|love|want|need)/i,
   /always|never|important|总是|从不|重要/i,
 ];
 
+// PII 检测模式（用于警告，不用于自动捕获）
+const PII_PATTERNS = [
+  /\+\d{10,13}\b/,  // 电话号码
+  /\b[\w.+-]+@[\w-]+\.[\w.-]{2,}\b/,  // 邮箱（移除锚点以支持文本中查找）
+];
+
 function shouldCapture(text, maxChars = DEFAULT_CAPTURE_MAX_CHARS) {
   if (!text || typeof text !== 'string') return false;
-  
+
   // 中文信息密度高，使用更低的长度阈值
   const hasChinese = /[\u4e00-\u9fa5]/.test(text);
   const minLength = hasChinese ? 6 : 10;
-  
+
   if (text.length < minLength || text.length > maxChars) return false;
   if (text.includes('<relevant-memories>')) return false;
   if (text.startsWith('<') && text.includes('</')) return false;
   if (text.includes('**') && text.includes('\n-')) return false;
-  
+
   const emojiCount = (text.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
   if (emojiCount > 3) return false;
 
   return MEMORY_TRIGGERS.some(r => r.test(text));
 }
 
+function containsPII(text) {
+  return PII_PATTERNS.some(pattern => pattern.test(text));
+}
+
 function detectCategory(text) {
   const lower = text.toLowerCase();
   if (/\b(prefer|like|love|hate|want)\b|喜欢/i.test(lower)) return 'preference';
   if (/\b(decided|will use|budeme)\b|决定/i.test(lower)) return 'decision';
-  if (/\+\d{10,13}\b|^[\w.+-]+@[\w-]+\.[\w.-]{2,}$|\b(is called)\b|叫做/i.test(lower)) return 'entity';
+  if (/\b(is called)\b|叫做/i.test(lower)) return 'entity';
   if (/\b(is|are|has|have)\b|是|有/i.test(lower)) return 'fact';
   return 'other';
 }
@@ -575,6 +583,12 @@ export default function register(api) {
         const toCapture = userTexts.filter(t => shouldCapture(t, maxChars));
 
         for (const text of toCapture) {
+          // 检测 PII 并根据配置决定是否跳过
+          if (containsPII(text) && !cfg.allowPIICapture) {
+            api.logger.warn(`memory-qdrant: Skipping text with PII (set allowPIICapture=true to capture): ${text.slice(0, 30)}...`);
+            continue;
+          }
+
           const vector = await embeddings.embed(text);
           const existing = await db.search(vector, 1, SIMILARITY_THRESHOLDS.DUPLICATE);
           if (existing.length > 0) continue;
@@ -615,4 +629,4 @@ export default function register(api) {
 };
 
 // 导出内部函数供测试使用
-export { shouldCapture, detectCategory, escapeMemoryForPrompt, sanitizeInput };
+export { shouldCapture, detectCategory, escapeMemoryForPrompt, sanitizeInput, containsPII };
